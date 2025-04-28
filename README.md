@@ -2,20 +2,6 @@
 
 This project sets up a production-grade CI/CD pipeline using GitHub Actions-selfhosted runner to manage: Terraform Infrastructure (EKS cluster, ECR repo), Docker Build and Push to Amazon ECR, Security Scanning with Trivy, Deployment to Kubernetes (EKS) using Helm.
 
-##Project Structure
-.
-.github/workflows/ci-cd.yml   # GitHub Actions workflow file
-flask-app/                    # Simple Flask app source code
-helm/hello-world/             # Helm chart for Kubernetes deployment
-hello-world-sa.yaml           # ServiceAccount IAM role binding
-infra/                        # Terraform Infrastructure Code
-  main.tf
-  variables.tf
-   outputs.tf
-   provider.tf
-   backend.tf
-README.md                     # This file
-
 ## Prerequites 
 ###Prepare the github action with Self-hoster runner by creating AWS EC2 Amazon linux instance 
 

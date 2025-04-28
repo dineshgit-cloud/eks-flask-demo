@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-world
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hello-world
+  template:
+    metadata:
+      labels:
+        app: hello-world
+    spec:
+      serviceAccountName: hello-world-sa
+      securityContext:
+        runAsUser: 1000  # Ensure the container runs as a non-root user
+        runAsGroup: 3000  # Assign group
+        fsGroup: 2000  # Control access to volumes
+      containers:
+        - name: hello-world
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          ports:
+            - containerPort: 5000
+          resources:
+            requests:
+              memory: "256Mi"  # Memory request for the container
+              cpu: "500m"  # CPU request for the container
+            limits:
+              memory: "512Mi"  # Memory limit for the container
+              cpu: "1"  # CPU limit for the container

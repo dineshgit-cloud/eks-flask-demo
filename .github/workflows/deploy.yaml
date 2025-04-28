@@ -1,0 +1,97 @@
+name: CI/CD with Trivy, ECR, and Helm
+
+on:
+  push:
+    branches: [ main ]
+
+env:
+  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+
+jobs:
+  build-test-analyze:
+    runs-on: self-hosted 
+    steps:
+      - uses: actions/checkout@v4
+         
+      # Build Docker image
+      - name: Build Docker image
+        run: |
+          docker build -t $ECR_REGISTRY/hello-world:latest ./flask-app
+
+      # Authenticate to ECR
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      #Login to Amazon ECR
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      #Ensure ECR repository exists
+      - name: Ensure ECR repository exists
+        run: | 
+          aws ecr describe-repositories --repository-names hello-world --region $AWS_REGION || \
+          aws ecr create-repository --repository-name hello-world --region $AWS_REGION
+      #Push Docker image to ECR
+      - name: Push Docker image to ECR
+        run: |
+          docker push $ECR_REGISTRY/hello-world:latest
+      #Run Trivy vulnerability scan
+      - name: Run Trivy vulnerability scan
+        run: |
+          trivy image $ECR_REGISTRY/hello-world:latest
+  deploy:
+    needs: build-test-analyze
+    runs-on: self-hosted
+    env:
+      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      # 🛠 NEW: Initialize and apply Terraform
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: ./infra  # <-- your folder where main.tf is
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve -var="aws_region=${{ env.AWS_REGION }}"
+        working-directory: ./infra
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig --region $AWS_REGION --name eks-demo-poc
+
+      - name: Verify kubectl access
+        run: |
+          kubectl get ns
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+          
+      -  name: Deploy with Helm
+         run: |
+          # Replace AWS_ACCOUNT_ID in the service account YAML
+          sed -i 's|<AWS_ACCOUNT_ID>|'"$AWS_ACCOUNT_ID"'|g' hello-world-sa.yaml
+          kubectl apply -f hello-world-sa.yaml
+          helm upgrade --install hello-world ./helm/hello-world \
+          --set image.repository=$ECR_REGISTRY/hello-world \
+          --set image.tag=latest

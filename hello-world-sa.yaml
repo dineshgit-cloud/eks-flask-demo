@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: hello-world-sa
+  namespace: default
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::<AWS_ACCOUNT_ID>:role/hello-world-sa
+    eks.amazonaws.com/sts-regional-endpoints: "true"

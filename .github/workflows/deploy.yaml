@@ -78,7 +78,7 @@ jobs:
 
       - name: Update kubeconfig
         run: |
-          aws eks update-kubeconfig --region $AWS_REGION --name eks-demo-poc
+          aws eks update-kubeconfig --region $AWS_REGION --name eks-demo-poc-v1
 
       - name: Verify kubectl access
         run: |

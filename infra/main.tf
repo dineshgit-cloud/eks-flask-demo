@@ -17,7 +17,10 @@ module "eks" {
   }
 
   vpc_id     = "vpc-0c6a4bcbe019bd0b3"
-  subnet_ids = ["subnet-05be2fee0a8c9c8f2"]
+  subnet_ids = [
+    "subnet-05be2fee0a8c9c8f2",
+    "subnet-0f472ebd63e2e5455"
+    ]
 
   tags = {
     Environment = "dev"

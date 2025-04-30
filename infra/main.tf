@@ -16,10 +16,10 @@ module "eks" {
     node_pools = ["general-purpose"]
   }
 
-  vpc_id     = "vpc-0c6a4bcbe019bd0b3"
+  vpc_id     = "vpc-xxxxxxx"
   subnet_ids = [
-    "subnet-05be2fee0a8c9c8f2",
-    "subnet-0f472ebd63e2e5455"
+    "subnet-xxxxxxxxxx",
+    "subnet-xxxxxxxxxxxx"
     ]
 
   tags = {
